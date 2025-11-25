@@ -20,6 +20,10 @@ const connectionString = process.env.DATABASE_URL || "postgresql://postgres:post
 console.log("Using database:", connectionString);
 console.log("Using OpenAI key:", process.env.OPENAI_API_KEY);
 
+// we need to get the information that we are embedding from a table in our Postgres database
+// then save the embedded vectors back to that table in a vector column
+// finally we can use that vector store to perform RAG
+// continue working from here
 async function initializeVectorStore() {
   const vectorStore = await PGVectorStore.initialize(embeddings, {
     postgresConnectionOptions: {
