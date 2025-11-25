@@ -4,7 +4,7 @@ import {Document} from "@langchain/core/documents";
 import {Client} from "pg";
 
 const llm = new ChatOpenAI({
-    model: "gpt-5.1-mini",
+    model: "gpt-4o",
     apiKey: process.env.OPENAI_API_KEY,
     temperature: 0.7,
     // modelName: "",
