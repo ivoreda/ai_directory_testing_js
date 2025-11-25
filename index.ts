@@ -46,12 +46,13 @@ async function loadDocumentsFromDB(): Promise<Document[]> {
     );
 
     const docs: Document[] = result.rows.map((row: any) => ({
-      pageContent: row.content,
-      metadata: {
-        id: row.id,
-        source: row.source,
-        updatedAt: row.updated_at,
-      },
+        pageContent: row.content,
+        metadata: 
+        {
+            id: row.id,
+            embedding: row.embedding,
+            metadata: row.metadata,
+        },
     }));
 
     return docs;
@@ -150,8 +151,8 @@ async function incrementalRefresh() {
           pageContent: row.content,
           metadata: {
             id: row.id,
-            source: row.source,
-            updatedAt: row.updated_at,
+            embedding: row.embedding,
+            metadata: row.metadata,
           },
         })
     );
@@ -163,7 +164,7 @@ async function incrementalRefresh() {
   }
 }
 
-// Main execution
+// Main function execution
 async function main() {
   await indexDocuments();
   await ragQuery("How do I configure authentication?");
