@@ -20,6 +20,11 @@ export class ToolRepository {
         return result[0];
     }
 
+    async markToolAsEmbeddedAsync(toolId: string){
+        await sql`UPDATE tools SET isEmbedded = true WHERE id = ${toolId}`;
+    }
+
+
     async deleteToolAsync(toolId:string){
         await sql`DELETE FROM tools WHERE id = ${toolId}`;
     }

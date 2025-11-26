@@ -1,5 +1,6 @@
 
 export class ToolDto{
+    id: string = "";
     name: string = "";
     description: string = "";
     url: string = "";

@@ -23,6 +23,11 @@ export class ToolService {
         return await this.toolRepository.updateToolAsync(toolId, toolData);
     }
 
+    async markToolAsEmbedded(toolId: string){
+        return await this.toolRepository.markToolAsEmbeddedAsync(toolId);
+    }
+
+
     async deleteTool(toolId:string){
         return await this.toolRepository.deleteToolAsync(toolId);
     }

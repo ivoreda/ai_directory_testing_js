@@ -2,12 +2,22 @@ import toolRoutes from './src/routes/tool.route';
 import { absolutePath } from 'swagger-ui-dist';
 import {eventEmitter} from './src/events/emitters';
 import {Tool} from './src/models/Tool.model';
+import { ragService } from './src/services/rag.service';
+import { ToolService } from './src/services/tool.service';
+
+const toolService = new ToolService();
 
 console.log("Starting server...");
 
-eventEmitter.on('newToolAdded', (tool: Tool) => {
+eventEmitter.on('newToolAdded', async (tool: Tool) => {
     console.log(`New tool added: ${tool.name} (ID: ${tool.id})`);
-    
+
+    try {
+        await ragService.embedNewTool(tool);
+    } catch (error) {
+        console.error("Error embedding new tool:", error);
+    }
+    console.log(`Embedding process initiated for tool ID: ${tool.id}`);
 
 });
 
