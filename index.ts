@@ -1,178 +1,55 @@
-import {ChatOpenAI, OpenAIEmbeddings} from "@langchain/openai";
-import {PGVectorStore} from "@langchain/community/vectorstores/pgvector";
-import {Document} from "@langchain/core/documents";
-import {Client} from "pg";
+import toolRoutes from './src/routes/tool.route';
+import { absolutePath } from 'swagger-ui-dist';
+import {eventEmitter} from './src/events/emitters';
+import {Tool} from './src/models/Tool.model';
 
-const llm = new ChatOpenAI({
-    model: "gpt-4o",
-    apiKey: process.env.OPENAI_API_KEY,
-    temperature: 0.7,
-    // modelName: "",
+console.log("Starting server...");
+
+eventEmitter.on('newToolAdded', (tool: Tool) => {
+    console.log(`New tool added: ${tool.name} (ID: ${tool.id})`);
+    
+
 });
 
-const embeddings = new OpenAIEmbeddings({
-    model: "text-embedding-3-small",
-    apiKey: process.env.OPENAI_API_KEY,
-})
+const server = Bun.serve({
+  async fetch(request) {
+    const url = new URL(request.url);
+    const { pathname } = url;
 
-const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/ai_directory_demo";
-
-console.log("Using database:", connectionString);
-console.log("Using OpenAI key:", process.env.OPENAI_API_KEY);
-
-// we need to get the information that we are embedding from a table in our Postgres database
-// then save the embedded vectors back to that table in a vector column
-// finally we can use that vector store to perform RAG
-// continue working from here
-async function initializeVectorStore() {
-  const vectorStore = await PGVectorStore.initialize(embeddings, {
-    postgresConnectionOptions: {
-      connectionString,
-    },
-    tableName: "documents", // table for storing vectors
-    columns: {
-      idColumnName: "id",
-      vectorColumnName: "embedding",
-      contentColumnName: "content",
-      metadataColumnName: "metadata",
-    },
-  });
-  return vectorStore;
-}
-
-async function loadDocumentsFromDB(): Promise<Document[]> {
-  const client = new Client({ connectionString });
-  await client.connect();
-
-  try {
-    const result = await client.query(
-      "SELECT id, content, metadata, embedding FROM documents"
-    );
-
-    const docs: Document[] = result.rows.map((row: any) => ({
-        pageContent: row.content,
-        metadata: 
-        {
-            id: row.id,
-            embedding: row.embedding,
-            metadata: row.metadata,
-        },
-    }));
-
-    return docs;
-  } finally {
-    await client.end();
-  }
-}
-
-async function indexDocuments() {
-  console.log("Initializing vector store...");
-  const vectorStore = await initializeVectorStore();
-
-  console.log("Loading documents from database...");
-  const documents = await loadDocumentsFromDB();
-
-  if (documents.length === 0) {
-    console.log("No documents to index");
-    return;
-  }
-
-  console.log(`Adding ${documents.length} documents to vector store...`);
-  await vectorStore.addDocuments(documents);
-  console.log("Indexing complete!");
-}
-
-
-async function ragQuery(query: string) {
-  console.log(`\nQuery: ${query}\n`);
-
-  // Initialize vector store
-  const vectorStore = await initializeVectorStore();
-
-  // Retrieve relevant documents
-  const retriever = vectorStore.asRetriever({
-    k: 3, // Return top 3 documents
-  });
-
-  const relevantDocs = await retriever.invoke(query);
-
-  console.log(`Retrieved ${relevantDocs.length} documents:\n`);
-  relevantDocs.forEach((doc, i) => {
-    console.log(`[${i + 1}] ${doc.pageContent.substring(0, 200)}...`);
-    console.log(`    Source: ${doc.metadata?.source}\n`);
-  });
-
-  const context = relevantDocs
-    .map((doc) => doc.pageContent)
-    .join("\n\n---\n\n");
-
-  const systemPrompt = `You are a helpful assistant. Answer the question based on the provided context. If you don't know the answer, say "I don't know".`;
-
-  const response = await llm.invoke([
-    {
-      role: "system",
-      content: systemPrompt,
-    },
-    {
-      role: "user",
-      content: `Context:\n${context}\n\nQuestion: ${query}`,
-    },
-  ]);
-
-  console.log("Answer:");
-  console.log(response.content);
-}
-
-async function incrementalRefresh() {
-  const client = new Client({ connectionString });
-  await client.connect();
-
-  try {
-    const vectorStore = await initializeVectorStore();
-
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const result = await client.query(
-      "SELECT id, content, metadata, embedding FROM documents WHERE updated_at > $1",
-      [oneHourAgo]
-    );
-
-    if (result.rows.length === 0) {
-      console.log("No new documents to update");
-      return;
+    // --- Swagger UI ---
+    // Redirect /api-docs to /api-docs/index.html
+    if (pathname === '/api-docs') {
+      return Response.redirect(`${url.origin}/api-docs/index.html`, 302);
     }
 
-    console.log(`Updating ${result.rows.length} changed documents...`);
-
-    for (const row of result.rows) {
-      await vectorStore.delete({
-        filter: { id: row.id },
-      });
+    // Serve the openapi.json spec
+    if (pathname === '/api-docs/openapi.json') {
+        return new Response(Bun.file('./public/openapi.json'));
     }
 
-    const docs = result.rows.map(
-      (row: any) =>
-        new Document({
-          pageContent: row.content,
-          metadata: {
-            id: row.id,
-            embedding: row.embedding,
-            metadata: row.metadata,
-          },
-        })
-    );
+    // Serve Swagger UI static files
+    if (pathname.startsWith('/api-docs/')) {
+        const filePath = pathname.replace('/api-docs/', '');
+        const absolute = absolutePath();
+        const file = Bun.file(`${absolute}/${filePath}`);
+        return new Response(file);
+    }
+    // --- End Swagger UI ---
 
-    await vectorStore.addDocuments(docs);
-    console.log("Update complete!");
-  } finally {
-    await client.end();
-  }
-}
+    // Route requests for '/tools' or '/tools/*' to the tool router
+    if (url.pathname.startsWith('/tools')) {
+      return toolRoutes(request);
+    }
 
-// Main function execution
-async function main() {
-  await indexDocuments();
-  await ragQuery("How do I configure authentication?");
+    // Handle other routes, e.g., the root path
+    if (url.pathname === '/') {
+        return new Response("Welcome to the AI Directory!");
+    }
 
-}
+    // Fallback for routes that don't match
+    return new Response(JSON.stringify({ message: "Not Found" }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+  },
+  port: 3000,
+});
 
-main().catch(console.error);
+console.log(`Server listening on http://localhost:${server.port}`);

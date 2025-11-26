@@ -1,0 +1,134 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AI Directory API",
+    "version": "1.0.0",
+    "description": "API for managing AI tools in the directory."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/tools": {
+      "get": {
+        "summary": "Get all tools",
+        "tags": ["Tools"],
+        "responses": {
+          "200": {
+            "description": "A list of tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Tool"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new tool",
+        "tags": ["Tools"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tool created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tool"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tools/{id}": {
+      "get": {
+        "summary": "Get a tool by ID",
+        "tags": ["Tools"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Tool details" },
+          "404": { "description": "Tool not found" }
+        }
+      },
+      "put": {
+        "summary": "Update a tool by ID",
+        "tags": ["Tools"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ToolDto" } } }
+        },
+        "responses": {
+          "200": { "description": "Tool updated" },
+          "404": { "description": "Tool not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a tool by ID",
+        "tags": ["Tools"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Tool deleted" },
+          "404": { "description": "Tool not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ToolDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "url": { "type": "string" },
+          "category": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "pricing": { "type": "string", "enum": ["Free", "Freemium", "Paid", "Contact for Pricing"] }
+        }
+      },
+      "Tool": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ToolDto" },
+          {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
