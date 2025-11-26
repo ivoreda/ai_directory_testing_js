@@ -48,7 +48,7 @@ export class RagService {
     const doc = new Document({
         pageContent: pageContent,
         metadata: {
-            id: toolData.id,
+            // id: toolData.id,
             name: toolData.name ?? null,
             url: toolData.url ?? null,
             category: toolData.category ?? null,
@@ -61,7 +61,7 @@ export class RagService {
     console.log("here now")
     console.log("doc", doc)
 
-    await vectorStore.addDocuments([doc]);
+    await vectorStore.addDocuments([doc], {ids: [toolData.id]});
 
 
     // cant call this because db will through isembedded is not in table
