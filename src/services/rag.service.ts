@@ -1,8 +1,7 @@
-import {ChatOpenAI, OpenAIEmbeddings} from "@langchain/openai";
+import {OpenAIEmbeddings} from "@langchain/openai";
 import {PGVectorStore} from "@langchain/community/vectorstores/pgvector";
 import {Document} from "@langchain/core/documents";
 import type { ToolDto } from "../dtos/tool.dto";
-import { tool } from "@langchain/core/tools";
 
 const embeddings = new OpenAIEmbeddings({
     model: "text-embedding-3-small",
@@ -27,12 +26,8 @@ async function initializeVectorStore() {
   return vectorStore;
 }
 
-// import { ToolService } from "../services/tool.service";
-
-// const toolService = new ToolService();
 export class RagService {
   async embedNewTool(toolData: ToolDto) {
-    console.log("Embedding new tool:", toolData);
     const vectorStore = await initializeVectorStore();
 
     const tags = Array.isArray(toolData.tags) ? toolData.tags : [];
@@ -58,9 +53,6 @@ export class RagService {
         id: toolData.id,
     });
 
-    console.log("here now")
-    console.log("doc", doc)
-
     await vectorStore.addDocuments([doc], {ids: [toolData.id]});
 
 
@@ -69,6 +61,13 @@ export class RagService {
     // but will not mark isEmbedded in tools table
     // await toolService.markToolAsEmbedded(toolData.id);
     console.log("Tool embedded successfully");
+  }
+
+  async queryTools(query: string, k: number = 5) {
+    const vectorStore = await initializeVectorStore();
+    console.log(query);
+    const results = await vectorStore.similaritySearch(query, k);
+    return results;
   }
 }
 

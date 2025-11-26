@@ -1,5 +1,5 @@
 import { ToolService } from '../services/tool.service';
-import { ToolDto } from '../dtos/tool.dto';
+import { QueryDto, ToolDto } from '../dtos/tool.dto';
 import { eventEmitter } from '../events/emitters';
 
 const toolService = new ToolService();
@@ -54,6 +54,15 @@ export default async function toolRoutes(request: Request): Promise<Response> {
     if (request.method === 'DELETE' && pathSegments.length === 2 && pathSegments[0] === 'tools') {
       await toolService.deleteTool(pathSegments[1]);
       return new Response(null, { status: 204 });
+    }
+
+    // POST /tools/query
+    if (request.method === 'POST' && url.pathname === '/tools/query') {
+        const body: QueryDto = await request.json();
+        const query = body.query;
+
+        const response = await toolService.queryTools(query);
+        return new Response(JSON.stringify(response), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });

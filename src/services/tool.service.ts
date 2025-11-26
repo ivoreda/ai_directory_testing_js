@@ -1,5 +1,6 @@
 import { ToolRepository } from "../repository/tool.repository";
 import { ToolDto } from "../dtos/tool.dto";
+import {ragService} from "./rag.service";
 
 export class ToolService {
     private readonly toolRepository: ToolRepository;
@@ -25,6 +26,10 @@ export class ToolService {
 
     async markToolAsEmbedded(toolId: string){
         return await this.toolRepository.markToolAsEmbeddedAsync(toolId);
+    }
+
+    async queryTools(query: string){
+        return await ragService.queryTools(query);
     }
 
 

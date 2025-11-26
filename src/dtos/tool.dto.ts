@@ -8,3 +8,7 @@ export class ToolDto{
     tags: string[] = [];
     pricing: 'Free' | 'Freemium' | 'Paid' | 'Contact for Pricing' = 'Free';
 }
+
+export class QueryDto{
+    query: string = "";
+}
